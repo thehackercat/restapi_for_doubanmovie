@@ -1,53 +1,40 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from douban.models import Movies
-from douban.serializer import MoviesSerializer
-from django.http import Http404
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
+from django.contrib.auth.models import User
+from douban.permissions import IsOwnerOrReadOnly
+from douban.models import Movies, celebrity
+from douban.serializer import MoviesSerializer, UserSerializer, DirectorSerializer
+from rest_framework import generics
+from rest_framework import permissions
 
+class MoviesList(generics.ListCreateAPIView):
+    queryset = Movies.objects.all()
+    serializer_class = MoviesSerializer
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
-class MoviesList(APIView):
-    """
-    罗列出所有的 Movies 或者 能新建一个 Movies
-    """
-    def get(self, request, format=None):
-        movies = Movies.objects.all()
-        serializer = MoviesSerializer(movies, many=True)
-        return Response(serializer.data)
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user, director=self.request.celebrity)
 
-    def post(self, request, format=None):
-        serializer = MoviesSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class MoviesDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Movies.objects.all()
+    serializer_class = MoviesSerializer
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly,)
 
-class MoviesDetail(APIView):
-    """
-    展示\更新或删除一个 Movies
-    """
-    def get_object(self, pk):
-        try:
-            return Movies.objects.get(pk=pk)
-        except Movies.DoesNotExist:
-            raise Http404
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user, director=self.request.celebrity)
 
-    def get(self, request, pk, format=None):
-        movies = self.get_object(pk)
-        serializer = MoviesSerializer(movies)
-        return Response(serializer.data)
+class UserList(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
-    def put(self, request, pk, format=None):
-        movies = self.get_object(pk)
-        serializer = MoviesSerializer(movies, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class UserDetail(generics.RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
-    def delete(self, request, pk, format=None):
-        movies = self.get_object(pk)
-        movies.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+class DirectorList(generics.ListCreateAPIView):
+    queryset = celebrity.objects.all()
+    serializer_class = DirectorSerializer
+
+class DirectorDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = celebrity.objects.all()
+    serializer_class = DirectorSerializer
