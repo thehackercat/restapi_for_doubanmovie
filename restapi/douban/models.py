@@ -25,8 +25,8 @@ GENDER_CHOICES = (
 class Movies(models.Model):
     title = models.CharField(max_length=100, blank=True, default='')
     year = models.CharField(max_length=20)
-    # 在 director 关联了 Movies 类 和 celecrity 类, 在第4章会用到 celebrity 类
-    director = models.ForeignKey('celebrity', related_name='movies')
+    # 在 director 关联了 Movies 类 和 Director 类, 在第4章会用到 Director 类
+    director = models.ForeignKey('Director', related_name='movies')
     # 关联 User 类来确定 Movies 的创建者
     owner = models.ForeignKey('auth.User', related_name='movies')
     country = models.CharField(choices=COUNTRY_CHOICES, default='US', max_length=20)
@@ -37,7 +37,7 @@ class Movies(models.Model):
     class Meta:
         ordering = ('created',)
 
-class celebrity(models.Model):
+class Director(models.Model):
     name = models.CharField(max_length=100, blank=True, default='')
     age = models.IntegerField()
     gender = models.CharField(choices=GENDER_CHOICES, default='male', max_length=20)
